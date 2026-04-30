@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#ED071B" />
+    <title>Hydraulic System Calculator</title>
+    <meta name="description" content="Cylinder, motor, pump, pressure-drop and piping calculations for hydraulic system design." />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap"
+    />
+
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <a class="skip-link" href="#tab-panel">Skip to calculator</a>
+
+    <header class="topbar" role="banner">
+      <div class="topbar__inner">
+        <a class="brand" href="./" aria-label="Danfoss Hydraulic System Calculator">
+          <img class="brand__logo" src="./assets/danfoss-logo.svg" alt="Danfoss" width="92" height="40" />
+          <span class="brand__divider" aria-hidden="true"></span>
+          <span class="brand__title">Hydraulic System Calculator</span>
+        </a>
+
+        <div class="unit-toggle" role="group" aria-label="Preferred measurements">
+          <button type="button" class="unit-toggle__option is-active" data-unit="metric" aria-pressed="true">Metric</button>
+          <button type="button" class="unit-toggle__option" data-unit="imperial" aria-pressed="false">Imperial</button>
+        </div>
+      </div>
+    </header>
+
+    <nav class="tabbar" role="tablist" aria-label="Calculators">
+      <!-- Tab buttons are rendered by JS so the icon SVGs and labels stay in one place. -->
+    </nav>
+
+    <main id="tab-panel" class="tab-panel" tabindex="-1">
+      <!-- Active tab content rendered by JS. -->
+    </main>
+
+    <footer class="footer">
+      <p>
+        Built for the Danfoss leadership summit. Calculations match Trelleborg's Hydraulic System Calculator
+        (ISO 3320 / 3321 / 4393 for cylinder).
+      </p>
+    </footer>
+
+    <script type="module" src="./calculator.js"></script>
+  </body>
+</html>

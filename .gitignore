@@ -1,0 +1,26 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+
+# Python (skeleton from PyCharm)
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node (in case anyone adds tooling later)
+node_modules/
+
+# Vercel
+.vercel
+
+# Local
+*.log
+.claude/
+.playwright-mcp/
+trelleborg-*.png
+demo-*.png
