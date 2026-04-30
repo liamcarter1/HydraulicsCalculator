@@ -45,7 +45,7 @@
   --dur-slow: 360ms;
 
   /* Layout ------------------------------------------------- */
-  --topbar-height: 64px;
+  --topbar-height: 112px;
   --tabbar-height: 84px;
   --bottombar-height: 76px;     /* mobile bottom tab bar */
   --content-max: 1180px;
@@ -108,16 +108,24 @@ a { color: inherit; text-decoration: none; }
   gap: 16px;
   justify-content: space-between;
 }
-.brand { display: inline-flex; align-items: center; gap: 14px; }
-.brand__logo { height: 28px; width: auto; }
+.brand { display: inline-flex; align-items: center; gap: 22px; }
+.brand__logo {
+  height: 88px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+  /* The Vickers JPG already has white padding baked in; pull it tight against
+     the topbar background so the visible red box dominates. */
+  margin: -8px 0;
+}
 .brand__divider {
   width: 1px;
-  height: 22px;
+  height: 44px;
   background: var(--color-line-strong);
 }
 .brand__title {
   font-weight: 600;
-  font-size: 15px;
+  font-size: 17px;
   letter-spacing: -0.01em;
   color: var(--color-ink);
 }
@@ -468,7 +476,9 @@ a { color: inherit; text-decoration: none; }
 
 /* Responsive -------------------------------------------- */
 @media (max-width: 760px) {
-  :root { --topbar-height: 56px; }
+  :root { --topbar-height: 84px; }
+  .brand__logo { height: 64px; margin: -6px 0; }
+  .brand__divider { display: none; }
   .brand__title { display: none; }
   .hero { grid-template-columns: 1fr; padding: 22px; }
   .hero__art { order: -1; aspect-ratio: 16 / 9; }
