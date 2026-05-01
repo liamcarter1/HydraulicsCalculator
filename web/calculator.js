@@ -25,7 +25,7 @@ function renderTabbar() {
         data-tab="${t.id}"
       >
         <span class="tab-button__icon" aria-hidden="true">${t.icon}</span>
-        <span class="tab-button__label">${t.label}</span>
+        <span class="tab-button__label" data-short="${t.labelShort ?? t.label}">${t.label}</span>
         <span class="tab-button__hint">${t.hint}</span>
       </button>
     `

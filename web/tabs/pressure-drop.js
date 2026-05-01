@@ -7,6 +7,11 @@ import { actionsBar, copyToClipboard, emailLink } from "../actions.js";
 
 const STORAGE_KEY = "hsc.pressure-drop.inputs";
 
+const PRESETS = {
+  metric:   { flow: "40", diameter: "8",   K: "0.7", Sg: "0.87" },
+  imperial: { flow: "10", diameter: "0.3", K: "0.7", Sg: "0.87" },
+};
+
 const FIELDS = {
   metric: {
     flow:    { label: "Flow rate",                   unit: "lpm" },
@@ -25,15 +30,17 @@ const FIELDS = {
 };
 
 export function renderPressureDrop(host, { unit }) {
-  const state = loadState();
+  const state = loadState(unit);
 
-  host.appendChild(buildHero({
+  const hero = buildHero({
     eyebrow: "04 · Pressure Drop",
     title: "Orifice pressure drop",
     lede:
       "Estimate ΔP across a sharp-edged orifice from the upstream flow rate and orifice geometry. Useful for sizing flow-control valves and metering plates.",
     art: illustrations.orifice,
-  }));
+  });
+  host.appendChild(hero);
+  const heroArt = hero.querySelector(".hero__art");
 
   const grid = document.createElement("div");
   grid.className = "calc";
@@ -77,6 +84,15 @@ export function renderPressureDrop(host, { unit }) {
       inputsCard.body.querySelectorAll(".row__input").forEach((el) => (el.value = ""));
       paint();
     },
+    onPreset: () => {
+      Object.assign(state, PRESETS[unit]);
+      saveState(state);
+      inputsCard.body.querySelectorAll(".row__input").forEach((el) => {
+        const key = el.id.replace("pd-", "");
+        el.value = state[key] ?? "";
+      });
+      paint();
+    },
     onEmail: () => {
       const url = emailLink("Orifice pressure drop — results", serialize(state, unit));
       window.location.href = url;
@@ -89,13 +105,22 @@ export function renderPressureDrop(host, { unit }) {
   function paint() {
     const dp = solve(state, unit);
     const def = FIELDS[unit].dp;
+    const display = fmt(dp);
+    const isBlank = display === "—";
     resultsCard.body.innerHTML = `
-      <div class="row">
-        <label class="row__label">${def.label}<span class="row__hint">ΔP across the orifice</span></label>
-        <input class="row__output" disabled value="${fmt(dp)}" />
-        <span class="row__unit">${def.unit}</span>
+      <div class="result-hero">
+        <div class="result-hero__value${isBlank ? " result-hero__value--blank" : ""}">
+          ${display}<span class="result-hero__unit">${def.unit}</span>
+        </div>
+        <div class="result-hero__label">${def.label}</div>
+        <div class="result-hero__hint">ΔP across the orifice</div>
       </div>
     `;
+    // Animate orifice flow proportional to Q. Normalise to a friendly cycle window.
+    const Q = +state.flow || 0;
+    const refQ = unit === "imperial" ? 10 : 40; // preset values yield 1.0s
+    const cycleS = Q > 0 ? Math.max(0.25, Math.min(3, refQ / Q)) : 2;
+    heroArt.style.setProperty("--flow-s", `${cycleS}s`);
   }
 }
 
@@ -154,12 +179,12 @@ function card(title) {
   return { el, body: el.querySelector(".card__body") };
 }
 
-function loadState() {
+function loadState(unit) {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return { flow: "", diameter: "", K: "", Sg: "", ...JSON.parse(raw) };
   } catch {}
-  return { flow: "", diameter: "", K: "", Sg: "" };
+  return { ...PRESETS[unit] };
 }
 
 function saveState(s) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {} }

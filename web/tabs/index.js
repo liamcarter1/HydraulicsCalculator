@@ -33,6 +33,7 @@ export const tabs = [
   {
     id: "pressure-drop",
     label: "Pressure Drop",
+    labelShort: "ΔP Drop",
     hint: "Orifice ΔP",
     icon: icons.gauge,
     render: renderPressureDrop,

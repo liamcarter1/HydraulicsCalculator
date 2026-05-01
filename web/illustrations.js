@@ -31,9 +31,11 @@ export const illustrations = {
       <rect x="94" y="78" width="22" height="10" rx="2" fill="${INK}"/>
       <!-- Port -->
       <rect x="20" y="10" width="14" height="14" rx="2" fill="${RED}"/>
-      <!-- Piston rod extending out -->
-      <rect x="136" y="44" width="58" height="12" rx="3" fill="#9a9aa1" stroke="${INK}" stroke-width="1.2"/>
-      <ellipse cx="194" cy="50" rx="3" ry="6" fill="${RED}" stroke="${INK}" stroke-width="1.2"/>
+      <!-- Piston rod extending out (animated) -->
+      <g class="cyl-rod">
+        <rect x="136" y="44" width="58" height="12" rx="3" fill="#9a9aa1" stroke="${INK}" stroke-width="1.2"/>
+        <ellipse cx="194" cy="50" rx="3" ry="6" fill="${RED}" stroke="${INK}" stroke-width="1.2"/>
+      </g>
       <!-- Stroke arrow -->
       <g stroke="${RED}" stroke-width="1.6" fill="none" stroke-linecap="round">
         <path d="M148 30 L188 30"/>
@@ -55,10 +57,14 @@ export const illustrations = {
         <circle cx="70" cy="70" r="38" fill="none"/>
         <circle cx="70" cy="70" r="32" fill="none"/>
       </g>
-      <!-- Shaft -->
+      <!-- Shaft (static stub) -->
       <rect x="60" y="-6" width="20" height="22" rx="3" fill="#9a9aa1" stroke="${INK}" stroke-width="1.2"/>
-      <circle cx="70" cy="70" r="14" fill="${RED}"/>
-      <circle cx="70" cy="70" r="6" fill="#0a0a0c"/>
+      <!-- Rotor: red hub + black core + notch (rotates with computed rpm) -->
+      <g class="motor-rotor">
+        <circle cx="70" cy="70" r="14" fill="${RED}"/>
+        <circle cx="70" cy="70" r="6" fill="#0a0a0c"/>
+        <rect x="68" y="56" width="4" height="6" rx="1" fill="#0a0a0c"/>
+      </g>
       <!-- Ports -->
       <rect x="-8" y="60" width="14" height="20" rx="2" fill="${INK}"/>
       <rect x="134" y="60" width="14" height="20" rx="2" fill="${INK}"/>
@@ -83,31 +89,35 @@ export const illustrations = {
       <rect x="176" y="48" width="14" height="22" rx="2" fill="${INK}"/>
       <text x="-2" y="42" font-family="ui-monospace, monospace" font-size="10" fill="${RED}" text-anchor="middle">IN</text>
       <text x="183" y="42" font-family="ui-monospace, monospace" font-size="10" fill="${RED}" text-anchor="middle">OUT</text>
-      <!-- Gears -->
-      <g stroke="${INK}" stroke-width="1.2">
+      <!-- Left gear (rotates clockwise) -->
+      <g class="pump-gear pump-gear--l" stroke="${INK}" stroke-width="1.2">
         <circle cx="60" cy="59" r="34" fill="#0a0a0c"/>
-        <circle cx="120" cy="59" r="34" fill="#0a0a0c"/>
         <circle cx="60" cy="59" r="6" fill="${RED}"/>
-        <circle cx="120" cy="59" r="6" fill="${RED}"/>
+        <g stroke="${STEEL}" stroke-width="1.4" stroke-linecap="round" opacity="0.7">
+          ${Array.from({ length: 12 }, (_, i) => {
+            const a = (i / 12) * Math.PI * 2;
+            const x1 = 60 + Math.cos(a) * 28;
+            const y1 = 59 + Math.sin(a) * 28;
+            const x2 = 60 + Math.cos(a) * 33;
+            const y2 = 59 + Math.sin(a) * 33;
+            return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`;
+          }).join("")}
+        </g>
       </g>
-      <!-- Tooth ticks -->
-      <g stroke="${STEEL}" stroke-width="1.4" stroke-linecap="round" opacity="0.7">
-        ${Array.from({ length: 12 }, (_, i) => {
-          const a = (i / 12) * Math.PI * 2;
-          const x1 = 60 + Math.cos(a) * 28;
-          const y1 = 59 + Math.sin(a) * 28;
-          const x2 = 60 + Math.cos(a) * 33;
-          const y2 = 59 + Math.sin(a) * 33;
-          return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`;
-        }).join("")}
-        ${Array.from({ length: 12 }, (_, i) => {
-          const a = (i / 12) * Math.PI * 2;
-          const x1 = 120 + Math.cos(a) * 28;
-          const y1 = 59 + Math.sin(a) * 28;
-          const x2 = 120 + Math.cos(a) * 33;
-          const y2 = 59 + Math.sin(a) * 33;
-          return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`;
-        }).join("")}
+      <!-- Right gear (rotates counter-clockwise) -->
+      <g class="pump-gear pump-gear--r" stroke="${INK}" stroke-width="1.2">
+        <circle cx="120" cy="59" r="34" fill="#0a0a0c"/>
+        <circle cx="120" cy="59" r="6" fill="${RED}"/>
+        <g stroke="${STEEL}" stroke-width="1.4" stroke-linecap="round" opacity="0.7">
+          ${Array.from({ length: 12 }, (_, i) => {
+            const a = (i / 12) * Math.PI * 2;
+            const x1 = 120 + Math.cos(a) * 28;
+            const y1 = 59 + Math.sin(a) * 28;
+            const x2 = 120 + Math.cos(a) * 33;
+            const y2 = 59 + Math.sin(a) * 33;
+            return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`;
+          }).join("")}
+        </g>
       </g>
     </g>
   `),
@@ -134,13 +144,11 @@ export const illustrations = {
         <circle cx="106" cy="14" r="2.2"/>
         <circle cx="106" cy="66" r="2.2"/>
       </g>
-      <!-- Flow arrow -->
-      <g stroke="${RED}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M30 40 L70 40"/>
-        <path d="M64 34 L70 40 L64 46"/>
-        <path d="M120 40 L160 40"/>
-        <path d="M154 34 L160 40 L154 46"/>
-      </g>
+      <!-- Flow streams (dashed, animated) + static arrow heads -->
+      <line class="orifice-flow-stream" x1="30" y1="40" x2="66" y2="40" fill="none" stroke="${RED}" stroke-width="2" stroke-linecap="round"/>
+      <path  class="orifice-flow-arrow"  d="M64 34 L70 40 L64 46" fill="none" stroke="${RED}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <line class="orifice-flow-stream" x1="120" y1="40" x2="156" y2="40" fill="none" stroke="${RED}" stroke-width="2" stroke-linecap="round"/>
+      <path  class="orifice-flow-arrow"  d="M154 34 L160 40 L154 46" fill="none" stroke="${RED}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </g>
   `),
 
@@ -155,11 +163,9 @@ export const illustrations = {
         <rect x="-10" y="86" width="200" height="14" fill="#0a0a0c"/>
         <!-- Inside diameter line -->
         <rect x="-10" y="56" width="200" height="28" fill="#0a0a0c"/>
-        <!-- Flow arrow -->
-        <g stroke="${RED}" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 70 L160 70"/>
-          <path d="M150 62 L160 70 L150 78"/>
-        </g>
+        <!-- Flow stream (dashed, animates) + static arrow head -->
+        <line class="pipe-flow-stream" x1="20" y1="70" x2="156" y2="70" fill="none" stroke-linecap="round"/>
+        <path class="pipe-flow-arrow" d="M150 62 L160 70 L150 78" fill="none" stroke="${RED}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
       </g>
       <!-- End cap rings -->
       <ellipse cx="184" cy="42" rx="6" ry="20" fill="${RED}" opacity="0.85"/>

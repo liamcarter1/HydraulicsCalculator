@@ -9,6 +9,11 @@ import { icons } from "../icons.js";
 
 const STORAGE_KEY = "hsc.cylinder.inputs";
 
+const PRESETS = {
+  metric:   { bore: "80", rod: "40",  stroke: "200", pressure: "200",  flow: "20" },
+  imperial: { bore: "3",  rod: "1.5", stroke: "8",   pressure: "2900", flow: "5"  },
+};
+
 const inputDefs = [
   { key: "bore",     label: "Piston / Bore Diameter" },
   { key: "rod",      label: "Rod Diameter" },
@@ -23,21 +28,23 @@ const resultRows = [
   { key: "force",    label: "Force",    hint: "P × A on each side" },
   { key: "time",     label: "Time",     hint: "Volume ÷ flow rate" },
   { key: "velocity", label: "Velocity" },
-  { key: "outflow",  label: "Outflow",  hint: "Flow exiting the opposite port" },
+  { key: "outflow",  label: "Outflow",  hint: "Opposite-port flow" },
 ];
 
 export function renderCylinder(host, { unit }) {
   const u = units[unit];
-  const state = loadState();
+  const state = loadState(unit);
 
   // Hero ----------------------------------------------------
-  host.appendChild(buildHero({
+  const hero = buildHero({
     eyebrow: "01 · Cylinder",
     title: "Hydraulic cylinder design",
     lede:
       "Size a single-rod cylinder around its bore, rod and stroke. Bore and rod sides are computed in parallel, so you can compare extend-stroke against retract-stroke at a glance.",
     art: illustrations.cylinder,
-  }));
+  });
+  host.appendChild(hero);
+  const heroArt = hero.querySelector(".hero__art");
 
   // Calculator grid ----------------------------------------
   const grid = document.createElement("div");
@@ -118,7 +125,7 @@ export function renderCylinder(host, { unit }) {
   const formula = document.createElement("section");
   formula.className = "formula";
   formula.innerHTML = `
-    <details>
+    <details open>
       <summary>Show formulas</summary>
 A_bore = π · R²                A_rod = A_bore − π · r²
 V       = A · L                F      = P · A
@@ -136,6 +143,15 @@ Z (ratio) = A_bore ÷ A_rod
       Object.keys(state).forEach((k) => (state[k] = ""));
       saveState(state);
       inputsCard.body.querySelectorAll(".row__input").forEach((el) => (el.value = ""));
+      paint();
+    },
+    onPreset: () => {
+      Object.assign(state, PRESETS[unit]);
+      saveState(state);
+      inputsCard.body.querySelectorAll(".row__input").forEach((el) => {
+        const key = el.id.replace("cyl-", "");
+        el.value = state[key] ?? "";
+      });
       paint();
     },
     onEmail: () => {
@@ -165,6 +181,11 @@ Z (ratio) = A_bore ÷ A_rod
     const ratioCell = resultsCard.body.querySelector('.row__output[data-key="ratio"]');
     ratioCell.value = r.ratio == null ? "—" : `${fmt(r.ratio)} : 1`.replace(" : 1", "");
     if (r.ratio != null) ratioCell.value = `${fmt(r.ratio)}`;
+    // Drive rod animation: full cycle (extend+retract) takes 2× the bore-fill time,
+    // clamped to a visible range so very fast or very slow strokes still read.
+    const t = r.bore?.time;
+    const cycleS = t > 0 ? Math.max(0.8, Math.min(6, 2 * t)) : 3;
+    heroArt.style.setProperty("--cycle-s", `${cycleS}s`);
   }
 
   paint();
@@ -198,12 +219,12 @@ function card(title) {
   return { el, body: el.querySelector(".card__body") };
 }
 
-function loadState() {
+function loadState(unit) {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return { bore: "", rod: "", stroke: "", pressure: "", flow: "", ...JSON.parse(raw) };
   } catch {}
-  return { bore: "", rod: "", stroke: "", pressure: "", flow: "" };
+  return { ...PRESETS[unit] };
 }
 
 function saveState(state) {

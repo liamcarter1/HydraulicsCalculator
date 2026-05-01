@@ -2,18 +2,20 @@
 
 import { icons } from "./icons.js";
 
-export function actionsBar({ onCopy, onReset, onEmail }) {
+export function actionsBar({ onCopy, onReset, onEmail, onPreset }) {
   const el = document.createElement("div");
   el.className = "actions";
   el.innerHTML = `
     <button type="button" class="action" data-act="copy">${icons.copy}<span>Copy</span></button>
     <button type="button" class="action" data-act="reset">${icons.refresh}<span>Reset</span></button>
+    ${onPreset ? `<button type="button" class="action" data-act="preset">${icons.sparkle}<span>Try example</span></button>` : ""}
     <span class="actions__spacer"></span>
     <button type="button" class="action action--primary" data-act="email">${icons.mail}<span>Email</span></button>
   `;
   el.querySelector('[data-act="copy"]').addEventListener("click", onCopy);
   el.querySelector('[data-act="reset"]').addEventListener("click", onReset);
   el.querySelector('[data-act="email"]').addEventListener("click", onEmail);
+  if (onPreset) el.querySelector('[data-act="preset"]').addEventListener("click", onPreset);
   return el;
 }
 

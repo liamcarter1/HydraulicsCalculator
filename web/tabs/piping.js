@@ -12,6 +12,13 @@ const MODES = [
   { id: "kinematic", label: "Using kinematic viscosity" },
 ];
 
+// Realistic hydraulic-oil case (Sg=0.87, μ=46cP, 20mm pipe at 40 lpm).
+// At 40 lpm in a 20mm pipe v ≈ 2.12 m/s, Re ≈ 802 (laminar — typical).
+const PRESETS = {
+  metric:   { flow: "40", diameter: "20",  Sg: "0.87", mu: "46", nu: "53" },
+  imperial: { flow: "10", diameter: "0.8", Sg: "0.87", mu: "46", nu: "53" },
+};
+
 const FIELDS = {
   metric: {
     flow:     { label: "Flow rate",          unit: "lpm" },
@@ -36,15 +43,17 @@ const FIELDS = {
 };
 
 export function renderPiping(host, { unit }) {
-  const state = loadState();
+  const state = loadState(unit);
 
-  host.appendChild(buildHero({
+  const hero = buildHero({
     eyebrow: "05 · Piping",
     title: "Pipe sizing & flow regime",
     lede:
       "Check that flow stays in the laminar / transitional / turbulent regime you expect. Reynolds № tells you which side of ~2300 you're on; velocity tells you whether your fluid is whistling.",
     art: illustrations.pipe,
-  }));
+  });
+  host.appendChild(hero);
+  const heroArt = hero.querySelector(".hero__art");
 
   const grid = document.createElement("div");
   grid.className = "calc";
@@ -88,6 +97,12 @@ export function renderPiping(host, { unit }) {
       rebuildInputs();
       paint();
     },
+    onPreset: () => {
+      Object.keys(PRESETS[unit]).forEach((k) => (state[k] = PRESETS[unit][k]));
+      saveState(state);
+      rebuildInputs();
+      paint();
+    },
     onEmail: () => {
       const url = emailLink("Pipe sizing — results", serialize(state, unit));
       window.location.href = url;
@@ -125,11 +140,19 @@ export function renderPiping(host, { unit }) {
   function paint() {
     const f = FIELDS[unit];
     const r = solve(state, unit);
+    const regime = regimeInfo(r.Re);
     resultsCard.body.innerHTML = `
       ${resultRow(f.area, r.area)}
       ${resultRow(f.v, r.v)}
-      ${resultRow(f.Re, r.Re, regimeHint(r.Re))}
+      ${reynoldsRow(f.Re, r.Re, regime)}
     `;
+    // Drive the hero animation: cycle time inversely proportional to velocity.
+    // Convert anything to a normalised m/s for the animation, clamp to a visible
+    // range so neither stillness nor blur ruin the demo.
+    const v_si = unit === "imperial" ? (r.v ?? 0) * 0.3048 : (r.v ?? 0);
+    const cycleS = v_si > 0 ? Math.max(0.25, Math.min(3, 1.6 / v_si)) : 2;
+    heroArt.style.setProperty("--flow-s", `${cycleS}s`);
+    heroArt.dataset.regime = regime?.klass ?? "";
   }
 }
 
@@ -146,11 +169,31 @@ function resultRow(def, value, hint) {
   `;
 }
 
+function reynoldsRow(def, value, regime) {
+  return `
+    <div class="row">
+      <label class="row__label">
+        ${def.label}
+        ${regime
+          ? `<span class="regime regime--${regime.klass}">${regime.label}</span><span class="row__hint">${regime.subhint}</span>`
+          : ""}
+      </label>
+      <input class="row__output" disabled value="${fmt(value)}" />
+      <span class="row__unit">${def.unit}</span>
+    </div>
+  `;
+}
+
+function regimeInfo(Re) {
+  if (Re == null) return null;
+  if (Re < 2300) return { label: "Laminar",      subhint: "Re < 2300",            klass: "laminar" };
+  if (Re < 4000) return { label: "Transitional", subhint: "2300 ≤ Re < 4000",     klass: "transitional" };
+  return                { label: "Turbulent",    subhint: "Re ≥ 4000",            klass: "turbulent" };
+}
+
 function regimeHint(Re) {
-  if (Re == null) return "";
-  if (Re < 2300) return "Laminar (Re < 2300)";
-  if (Re < 4000) return "Transitional (2300 ≤ Re < 4000)";
-  return "Turbulent (Re ≥ 4000)";
+  const r = regimeInfo(Re);
+  return r ? `${r.label} (${r.subhint})` : "";
 }
 
 function solve(s, unit) {
@@ -238,12 +281,12 @@ function card(title) {
   return { el, body: el.querySelector(".card__body") };
 }
 
-function loadState() {
+function loadState(unit) {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return { mode: "absolute", flow: "", diameter: "", Sg: "", mu: "", nu: "", ...JSON.parse(raw) };
   } catch {}
-  return { mode: "absolute", flow: "", diameter: "", Sg: "", mu: "", nu: "" };
+  return { mode: "absolute", ...PRESETS[unit] };
 }
 
 function saveState(s) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {} }

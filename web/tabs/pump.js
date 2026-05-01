@@ -42,16 +42,29 @@ const MODE_INPUTS = {
   eta_t:        ["flow", "pressure", "power"],
 };
 
-export function renderPump(host, { unit }) {
-  const state = loadState();
+// Metric: V=28, N=1500, ηv=95% → Q = 28·1500·0.95/1000 = 39.9 lpm
+//   At P=200 bar, ηt=85%: Pw = 39.9·200/(600·0.85) = 15.65 kW
+const PRESETS = {
+  metric:   { displacement: "28",  speed: "1500", eta_v: "95", eta_t: "85", pressure: "200",  flow: "39.9",  power: "15.65" },
+  imperial: { displacement: "1.7", speed: "1500", eta_v: "95", eta_t: "85", pressure: "2900", flow: "10.49", power: "20.91" },
+};
 
-  host.appendChild(buildHero({
+export function renderPump(host, { unit }) {
+  const state = loadState(unit);
+
+  const hero = buildHero({
     eyebrow: "03 · Pump",
     title: "Hydraulic pump sizing",
     lede:
       "Match a pump's displacement and prime-mover power to a target flow rate. Switch to ‘Total efficiency’ to back-check a candidate setup against measured input power.",
     art: illustrations.pump,
-  }));
+  });
+  host.appendChild(hero);
+  const heroArt = hero.querySelector(".hero__art");
+  const speedCaption = document.createElement("div");
+  speedCaption.className = "hero__art-caption";
+  speedCaption.textContent = "Gears visualised slower than actual speed";
+  heroArt.appendChild(speedCaption);
 
   const grid = document.createElement("div");
   grid.className = "calc";
@@ -92,6 +105,12 @@ export function renderPump(host, { unit }) {
       rebuildInputs();
       paint();
     },
+    onPreset: () => {
+      Object.keys(PRESETS[unit]).forEach((k) => (state[k] = PRESETS[unit][k]));
+      saveState(state);
+      rebuildInputs();
+      paint();
+    },
     onEmail: () => {
       const url = emailLink("Hydraulic pump sizing — results", serialize(state, unit));
       window.location.href = url;
@@ -128,17 +147,26 @@ export function renderPump(host, { unit }) {
     const f = FIELDS[unit];
     const result = solve(state, unit);
     const targetDef = f[state.mode];
+    const display = fmt(result);
+    const isBlank = display === "—";
     resultsCard.body.innerHTML = `
-      <div class="row">
-        <label class="row__label">${targetDef.label}<span class="row__hint">Result of the selected calculation</span></label>
-        <input class="row__output" disabled value="${fmt(result)}" />
-        <span class="row__unit">${targetDef.unit}</span>
+      <div class="result-hero">
+        <div class="result-hero__value${isBlank ? " result-hero__value--blank" : ""}">
+          ${display}<span class="result-hero__unit">${targetDef.unit}</span>
+        </div>
+        <div class="result-hero__label">${targetDef.label}</div>
+        <div class="result-hero__hint">Result of the selected calculation</div>
       </div>
     `;
     formula.innerHTML = `
-      <details ${state.mode === "flow" ? "open" : ""}>
+      <details open>
         <summary>Show formula</summary>${formulaText(state.mode, unit)}</details>
     `;
+    const rpm = +state.speed || 0;
+    const slowness = 25;
+    const visibleRpm = rpm / slowness;
+    const cycleS = visibleRpm > 0 ? Math.max(0.4, Math.min(4, 60 / visibleRpm)) : 2;
+    heroArt.style.setProperty("--rpm-s", `${cycleS}s`);
   }
 }
 
@@ -215,12 +243,12 @@ function card(title) {
   return { el, body: el.querySelector(".card__body") };
 }
 
-function loadState() {
+function loadState(unit) {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return { mode: "flow", displacement: "", speed: "", eta_v: "", eta_t: "", pressure: "", flow: "", power: "", ...JSON.parse(raw) };
   } catch {}
-  return { mode: "flow", displacement: "", speed: "", eta_v: "", eta_t: "", pressure: "", flow: "", power: "" };
+  return { mode: "flow", ...PRESETS[unit] };
 }
 
 function saveState(s) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {} }

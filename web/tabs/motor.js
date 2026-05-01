@@ -56,16 +56,33 @@ const MODE_INPUTS = {
   power:        ["torque", "speed", "flow", "eta_v", "eta_m"],
 };
 
-export function renderMotor(host, { unit }) {
-  const state = loadState();
+// Internally-consistent preset values so any mode produces a clean answer.
+// Metric: V=28cm³/rev, N=1500rpm, ηv=95%, ηm=92%, P=200bar
+//   → Q = 28·1500/(1000·0.95) = 44.21 lpm
+//   → T = 28·200·0.92/(20π) = 81.97 N·m
+//   → Pw_out = Q·P·ηv·ηm/600 = 44.21·200·0.95·0.92/600 = 12.88 kW
+const PRESETS = {
+  metric:   { displacement: "28",  speed: "1500", eta_v: "95", eta_m: "92", pressure: "200",  flow: "44.21", torque: "82",  power: "12.88" },
+  imperial: { displacement: "1.7", speed: "1500", eta_v: "95", eta_m: "92", pressure: "2900", flow: "11.62", torque: "725", power: "17.18" },
+};
 
-  host.appendChild(buildHero({
+export function renderMotor(host, { unit }) {
+  const state = loadState(unit);
+
+  const hero = buildHero({
     eyebrow: "02 · Motor",
     title: "Hydraulic motor sizing",
     lede:
       "Pick the variable you want to solve for; fill in any consistent set of the remaining inputs. Volumetric and power-balance paths both feed the same answer — useful when a manufacturer datasheet gives you one but not the other.",
     art: illustrations.motor,
-  }));
+  });
+  host.appendChild(hero);
+  const heroArt = hero.querySelector(".hero__art");
+  // Caption under the rotor so the engineer in the room knows the speed is slowed.
+  const speedCaption = document.createElement("div");
+  speedCaption.className = "hero__art-caption";
+  speedCaption.textContent = "Rotor visualised slower than actual speed";
+  heroArt.appendChild(speedCaption);
 
   const grid = document.createElement("div");
   grid.className = "calc";
@@ -101,6 +118,12 @@ export function renderMotor(host, { unit }) {
     onCopy: (e) => copyToClipboard(serialize(state, unit), e.currentTarget),
     onReset: () => {
       Object.keys(state).forEach((k) => k !== "mode" && (state[k] = ""));
+      saveState(state);
+      rebuildInputs();
+      paint();
+    },
+    onPreset: () => {
+      Object.keys(PRESETS[unit]).forEach((k) => (state[k] = PRESETS[unit][k]));
       saveState(state);
       rebuildInputs();
       paint();
@@ -141,20 +164,28 @@ export function renderMotor(host, { unit }) {
     const f = FIELDS[unit];
     const { value, path } = solve(state, unit);
     const targetDef = f[state.mode];
+    const display = fmt(value);
+    const isBlank = display === "—";
     resultsCard.body.innerHTML = `
-      <div class="row">
-        <label class="row__label">
-          ${targetDef.label}
-          <span class="row__hint">${path ? "Computed via " + path : "Fill the inputs to compute"}</span>
-        </label>
-        <input class="row__output" disabled value="${fmt(value)}" />
-        <span class="row__unit">${targetDef.unit}</span>
+      <div class="result-hero">
+        <div class="result-hero__value${isBlank ? " result-hero__value--blank" : ""}">
+          ${display}<span class="result-hero__unit">${targetDef.unit}</span>
+        </div>
+        <div class="result-hero__label">${targetDef.label}</div>
+        <div class="result-hero__hint">${path ? "via " + path : "Fill the inputs to compute"}</div>
       </div>
     `;
     formula.innerHTML = `
-      <details ${state.mode === "flow" ? "open" : ""}>
+      <details open>
         <summary>Show formulas</summary>${formulaText(state.mode, unit)}</details>
     `;
+    // Drive rotor animation. If speed is the OUTPUT, fall back to the input N (state.speed)
+    // so the rotor is never frozen during a partial-input demo.
+    const rpm = state.mode === "speed" ? +value || 0 : +state.speed || 0;
+    const slowness = 25; // visualise slower so the eye can follow
+    const visibleRpm = rpm / slowness;
+    const cycleS = visibleRpm > 0 ? Math.max(0.4, Math.min(4, 60 / visibleRpm)) : 2;
+    heroArt.style.setProperty("--rpm-s", `${cycleS}s`);
   }
 }
 
@@ -301,12 +332,12 @@ function card(title) {
   return { el, body: el.querySelector(".card__body") };
 }
 
-function loadState() {
+function loadState(unit) {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return { mode: "flow", displacement: "", speed: "", eta_v: "", eta_m: "", pressure: "", flow: "", torque: "", power: "", ...JSON.parse(raw) };
   } catch {}
-  return { mode: "flow", displacement: "", speed: "", eta_v: "", eta_m: "", pressure: "", flow: "", torque: "", power: "" };
+  return { mode: "flow", ...PRESETS[unit] };
 }
 
 function saveState(s) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {} }
