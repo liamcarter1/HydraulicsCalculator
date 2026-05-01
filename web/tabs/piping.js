@@ -85,7 +85,9 @@ export function renderPiping(host, { unit }) {
   formula.className = "formula";
   formula.innerHTML = `
     <details open>
-      <summary>Show formulas</summary>${formulaText(unit)}</details>
+      <summary>Formulas</summary>
+      <div class="formula__grid">${formulaItems(unit)}</div>
+    </details>
   `;
   host.appendChild(formula);
 
@@ -93,12 +95,6 @@ export function renderPiping(host, { unit }) {
     onCopy: (e) => copyToClipboard(serialize(state, unit), e.currentTarget),
     onReset: () => {
       Object.keys(state).forEach((k) => k !== "mode" && (state[k] = ""));
-      saveState(state);
-      rebuildInputs();
-      paint();
-    },
-    onPreset: () => {
-      Object.keys(PRESETS[unit]).forEach((k) => (state[k] = PRESETS[unit][k]));
       saveState(state);
       rebuildInputs();
       paint();
@@ -238,21 +234,30 @@ function solve(s, unit) {
   return out;
 }
 
-function formulaText(unit) {
-  if (unit === "imperial") {
-    return [
-      "A  = π · d² / 4                                [in²]",
-      "v  = (Q · 231) / 60 / A / 12                   [ft/s,  Q gpm, d in]",
-      "Re_abs  = 7740 · v · d · Sg / μ                [v ft/s, d in, μ cP]",
-      "Re_kin  = 7740 · v · d / ν                     [ν cSt]",
-    ].join("\n");
-  }
-  return [
-    "A  = π · d² / 4                                  [mm²]",
-    "v  = Q / (A · 60)        with Q lpm, A in m²    [m/s]",
-    "Re_abs  = 1000 · v · d · Sg / μ                  [v m/s, d mm, μ cP]",
-    "Re_kin  = 1000 · v · d / ν                       [ν cSt]",
-  ].join("\n");
+function formulaItems(unit) {
+  const M = unit !== "imperial";
+  return `
+    <div class="formula__item">
+      <div class="formula__label">Cross-sectional area</div>
+      <div class="formula__expr">A = π · d² ÷ 4</div>
+      <div class="formula__caption">${M ? "d mm → A mm²" : "d inches → A in²"}</div>
+    </div>
+    <div class="formula__item">
+      <div class="formula__label">Velocity</div>
+      <div class="formula__expr">${M ? "v = Q ÷ (A · 60)" : "v = (Q · 231) ÷ 60 ÷ A ÷ 12"}</div>
+      <div class="formula__caption">${M ? "Q lpm, A m² → v m/s" : "Q gpm, d in → v ft/s"}</div>
+    </div>
+    <div class="formula__item">
+      <div class="formula__label">Reynolds № — absolute viscosity</div>
+      <div class="formula__expr">${M ? "Re = 1000 · v · d · Sg ÷ μ" : "Re = 7740 · v · d · Sg ÷ μ"}</div>
+      <div class="formula__caption">${M ? "v m/s, d mm, μ cP" : "v ft/s, d in, μ cP"}</div>
+    </div>
+    <div class="formula__item">
+      <div class="formula__label">Reynolds № — kinematic viscosity</div>
+      <div class="formula__expr">${M ? "Re = 1000 · v · d ÷ ν" : "Re = 7740 · v · d ÷ ν"}</div>
+      <div class="formula__caption">ν cSt</div>
+    </div>
+  `;
 }
 
 function buildHero({ eyebrow, title, lede, art }) {

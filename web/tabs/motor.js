@@ -122,12 +122,6 @@ export function renderMotor(host, { unit }) {
       rebuildInputs();
       paint();
     },
-    onPreset: () => {
-      Object.keys(PRESETS[unit]).forEach((k) => (state[k] = PRESETS[unit][k]));
-      saveState(state);
-      rebuildInputs();
-      paint();
-    },
     onEmail: () => {
       const url = emailLink("Hydraulic motor sizing — results", serialize(state, unit));
       window.location.href = url;
@@ -177,7 +171,9 @@ export function renderMotor(host, { unit }) {
     `;
     formula.innerHTML = `
       <details open>
-        <summary>Show formulas</summary>${formulaText(state.mode, unit)}</details>
+        <summary>Formulas</summary>
+        <div class="formula__grid">${formulaItems(state.mode, unit)}</div>
+      </details>
     `;
     // Drive rotor animation. If speed is the OUTPUT, fall back to the input N (state.speed)
     // so the rotor is never frozen during a partial-input demo.
@@ -281,29 +277,47 @@ function solve(s, unit) {
   return { value: null };
 }
 
-function formulaText(mode, unit) {
+function formulaItems(mode, unit) {
   const M = unit === "metric";
-  const t = {
+  const item = (label, expr, caption) => `
+    <div class="formula__item">
+      <div class="formula__label">${label}</div>
+      <div class="formula__expr">${expr}</div>
+      ${caption ? `<div class="formula__caption">${caption}</div>` : ""}
+    </div>`;
+  const groups = {
     flow:
-      M ? `Q = V · N ÷ (1000 · ηv)               [lpm,  V cm³/rev,  N rpm]\nQ = Pw · 600 ÷ (P · ηv · ηm)         [alt: from output power]`
-        : `Q = V · N ÷ (231 · ηv)                [gpm,  V in³/rev,  N rpm]\nQ = Pw · 1714 ÷ (P · ηv · ηm)        [alt: from output power]`,
+      M ? [item("Volumetric path", "Q = V · N ÷ (1000 · ηv)", "lpm · V cm³/rev · N rpm"),
+           item("Power path",      "Q = Pw · 600 ÷ (P · ηv · ηm)", "alt: from output power")]
+        : [item("Volumetric path", "Q = V · N ÷ (231 · ηv)", "gpm · V in³/rev · N rpm"),
+           item("Power path",      "Q = Pw · 1714 ÷ (P · ηv · ηm)", "alt: from output power")],
     pressure:
-      M ? `P = 20π · T ÷ (V · ηm)                [bar,  T N·m,  V cm³/rev]\nP = Pw · 600 ÷ (Q · ηv · ηm)         [alt: from power & flow]`
-        : `P = 2π · T ÷ (V · ηm)                 [psi,  T lbf·in, V in³/rev]\nP = Pw · 1714 ÷ (Q · ηv · ηm)        [alt: from power & flow]`,
+      M ? [item("Torque path", "P = 20π · T ÷ (V · ηm)", "bar · T N·m · V cm³/rev"),
+           item("Power path",  "P = Pw · 600 ÷ (Q · ηv · ηm)", "alt: from power & flow")]
+        : [item("Torque path", "P = 2π · T ÷ (V · ηm)", "psi · T lbf·in · V in³/rev"),
+           item("Power path",  "P = Pw · 1714 ÷ (Q · ηv · ηm)", "alt: from power & flow")],
     displacement:
-      M ? `V = Q · 1000 · ηv ÷ N                 [cm³/rev]\nV = 20π · T ÷ (P · ηm)                [alt: from torque]`
-        : `V = Q · 231  · ηv ÷ N                 [in³/rev]\nV = 2π  · T ÷ (P · ηm)                [alt: from torque]`,
+      M ? [item("Volumetric path", "V = Q · 1000 · ηv ÷ N", "cm³/rev"),
+           item("Torque path",     "V = 20π · T ÷ (P · ηm)", "alt: from torque")]
+        : [item("Volumetric path", "V = Q · 231 · ηv ÷ N", "in³/rev"),
+           item("Torque path",     "V = 2π · T ÷ (P · ηm)", "alt: from torque")],
     speed:
-      M ? `N = Q · 1000 · ηv ÷ V                 [rpm]\nN = Pw · 60 000 ÷ (T · 2π)            [alt: from power & torque]`
-        : `N = Q · 231 · ηv ÷ V                  [rpm]\nN = Pw · 63 025 ÷ T                   [alt: from power & torque]`,
+      M ? [item("Volumetric path", "N = Q · 1000 · ηv ÷ V", "rpm"),
+           item("Power path",      "N = Pw · 60 000 ÷ (T · 2π)", "alt: from power & torque")]
+        : [item("Volumetric path", "N = Q · 231 · ηv ÷ V", "rpm"),
+           item("Power path",      "N = Pw · 63 025 ÷ T", "alt: from power & torque")],
     torque:
-      M ? `T = V · P · ηm ÷ (20π)                [N·m]\nT = Pw · 60 000 ÷ (N · 2π)            [alt: from power & speed]`
-        : `T = V · P · ηm ÷ (2π)                 [lbf·in]\nT = Pw · 63 025 ÷ N                   [alt: from power & speed]`,
+      M ? [item("Pressure path", "T = V · P · ηm ÷ (20π)", "N·m"),
+           item("Power path",    "T = Pw · 60 000 ÷ (N · 2π)", "alt: from power & speed")]
+        : [item("Pressure path", "T = V · P · ηm ÷ (2π)", "lbf·in"),
+           item("Power path",    "T = Pw · 63 025 ÷ N", "alt: from power & speed")],
     power:
-      M ? `Pw = T · N · 2π ÷ 60 000              [kW]\nPw = Q · P · ηv · ηm ÷ 600            [alt: hydraulic output]`
-        : `Pw = T · N ÷ 63 025                   [hp]\nPw = Q · P · ηv · ηm ÷ 1714           [alt: hydraulic output]`,
+      M ? [item("Mechanical path", "Pw = T · N · 2π ÷ 60 000", "kW"),
+           item("Hydraulic path",  "Pw = Q · P · ηv · ηm ÷ 600", "alt: hydraulic output")]
+        : [item("Mechanical path", "Pw = T · N ÷ 63 025", "hp"),
+           item("Hydraulic path",  "Pw = Q · P · ηv · ηm ÷ 1714", "alt: hydraulic output")],
   };
-  return t[mode];
+  return groups[mode].join("");
 }
 
 function buildHero({ eyebrow, title, lede, art }) {

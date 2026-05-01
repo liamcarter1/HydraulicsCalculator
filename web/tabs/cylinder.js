@@ -126,12 +126,45 @@ export function renderCylinder(host, { unit }) {
   formula.className = "formula";
   formula.innerHTML = `
     <details open>
-      <summary>Show formulas</summary>
-A_bore = π · R²                A_rod = A_bore − π · r²
-V       = A · L                F      = P · A
-T       = V ÷ FR               v      = L ÷ T
-Outflow_bore = FR ÷ Z          Outflow_rod  = FR · Z
-Z (ratio) = A_bore ÷ A_rod
+      <summary>Formulas</summary>
+      <div class="formula__grid">
+        <div class="formula__item">
+          <div class="formula__label">Bore-side area</div>
+          <div class="formula__expr">A<sub>bore</sub> = π · R²</div>
+        </div>
+        <div class="formula__item">
+          <div class="formula__label">Rod-side area</div>
+          <div class="formula__expr">A<sub>rod</sub> = A<sub>bore</sub> − π · r²</div>
+        </div>
+        <div class="formula__item">
+          <div class="formula__label">Volume</div>
+          <div class="formula__expr">V = A · L</div>
+        </div>
+        <div class="formula__item">
+          <div class="formula__label">Force</div>
+          <div class="formula__expr">F = P · A</div>
+        </div>
+        <div class="formula__item">
+          <div class="formula__label">Time</div>
+          <div class="formula__expr">T = V ÷ FR</div>
+        </div>
+        <div class="formula__item">
+          <div class="formula__label">Velocity</div>
+          <div class="formula__expr">v = L ÷ T</div>
+        </div>
+        <div class="formula__item">
+          <div class="formula__label">Outflow (bore side)</div>
+          <div class="formula__expr">Out<sub>bore</sub> = FR ÷ Z</div>
+        </div>
+        <div class="formula__item">
+          <div class="formula__label">Outflow (rod side)</div>
+          <div class="formula__expr">Out<sub>rod</sub> = FR · Z</div>
+        </div>
+        <div class="formula__item formula__item--span">
+          <div class="formula__label">Area ratio</div>
+          <div class="formula__expr">Z = A<sub>bore</sub> ÷ A<sub>rod</sub></div>
+        </div>
+      </div>
     </details>
   `;
   host.appendChild(formula);
@@ -143,15 +176,6 @@ Z (ratio) = A_bore ÷ A_rod
       Object.keys(state).forEach((k) => (state[k] = ""));
       saveState(state);
       inputsCard.body.querySelectorAll(".row__input").forEach((el) => (el.value = ""));
-      paint();
-    },
-    onPreset: () => {
-      Object.assign(state, PRESETS[unit]);
-      saveState(state);
-      inputsCard.body.querySelectorAll(".row__input").forEach((el) => {
-        const key = el.id.replace("cyl-", "");
-        el.value = state[key] ?? "";
-      });
       paint();
     },
     onEmail: () => {

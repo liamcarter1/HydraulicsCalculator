@@ -105,12 +105,6 @@ export function renderPump(host, { unit }) {
       rebuildInputs();
       paint();
     },
-    onPreset: () => {
-      Object.keys(PRESETS[unit]).forEach((k) => (state[k] = PRESETS[unit][k]));
-      saveState(state);
-      rebuildInputs();
-      paint();
-    },
     onEmail: () => {
       const url = emailLink("Hydraulic pump sizing — results", serialize(state, unit));
       window.location.href = url;
@@ -160,7 +154,9 @@ export function renderPump(host, { unit }) {
     `;
     formula.innerHTML = `
       <details open>
-        <summary>Show formula</summary>${formulaText(state.mode, unit)}</details>
+        <summary>Formula</summary>
+        <div class="formula__grid">${formulaItems(state.mode, unit)}</div>
+      </details>
     `;
     const rpm = +state.speed || 0;
     const slowness = 25;
@@ -202,19 +198,25 @@ function solve(s, unit) {
   return null;
 }
 
-function formulaText(mode, unit) {
+function formulaItems(mode, unit) {
   const M = unit === "metric";
-  const t = {
-    flow:         M ? "Q = V · N · ηv / 1000           [lpm]"
-                    : "Q = V · N · ηv / 231            [gpm]",
-    displacement: M ? "V = (Q · 1000) / (N · ηv)       [cm³/rev]"
-                    : "V = (Q · 231)  / (N · ηv)       [in³/rev]",
-    power:        M ? "Pw = (Q · P) / (600 · ηt)        [kW]"
-                    : "Pw = (Q · P) / (1714 · ηt)       [hp]",
-    eta_t:        M ? "ηt = (Q · P) / (600 · Pw)        [fraction × 100 %]"
-                    : "ηt = (Q · P) / (1714 · Pw)       [fraction × 100 %]",
+  const item = (label, expr, caption) => `
+    <div class="formula__item formula__item--span">
+      <div class="formula__label">${label}</div>
+      <div class="formula__expr">${expr}</div>
+      ${caption ? `<div class="formula__caption">${caption}</div>` : ""}
+    </div>`;
+  const map = {
+    flow:         M ? item("Flow rate",            "Q = V · N · ηv ÷ 1000",  "lpm · V cm³/rev · N rpm")
+                    : item("Flow rate",            "Q = V · N · ηv ÷ 231",   "gpm · V in³/rev · N rpm"),
+    displacement: M ? item("Displacement",         "V = (Q · 1000) ÷ (N · ηv)", "cm³/rev")
+                    : item("Displacement",         "V = (Q · 231) ÷ (N · ηv)",  "in³/rev"),
+    power:        M ? item("Electric motor power", "Pw = (Q · P) ÷ (600 · ηt)",  "kW · Q lpm · P bar")
+                    : item("Electric motor power", "Pw = (Q · P) ÷ (1714 · ηt)", "hp · Q gpm · P psi"),
+    eta_t:        M ? item("Total efficiency",     "ηt = (Q · P) ÷ (600 · Pw)",  "fraction × 100%")
+                    : item("Total efficiency",     "ηt = (Q · P) ÷ (1714 · Pw)", "fraction × 100%"),
   };
-  return t[mode];
+  return map[mode];
 }
 
 function buildHero({ eyebrow, title, lede, art }) {

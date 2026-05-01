@@ -72,7 +72,9 @@ export function renderPressureDrop(host, { unit }) {
   formula.className = "formula";
   formula.innerHTML = `
     <details open>
-      <summary>Show formula</summary>${formulaText(unit)}</details>
+      <summary>Formula</summary>
+      <div class="formula__grid">${formulaItems(unit)}</div>
+    </details>
   `;
   host.appendChild(formula);
 
@@ -82,15 +84,6 @@ export function renderPressureDrop(host, { unit }) {
       Object.keys(state).forEach((k) => (state[k] = ""));
       saveState(state);
       inputsCard.body.querySelectorAll(".row__input").forEach((el) => (el.value = ""));
-      paint();
-    },
-    onPreset: () => {
-      Object.assign(state, PRESETS[unit]);
-      saveState(state);
-      inputsCard.body.querySelectorAll(".row__input").forEach((el) => {
-        const key = el.id.replace("pd-", "");
-        el.value = state[key] ?? "";
-      });
       paint();
     },
     onEmail: () => {
@@ -146,11 +139,28 @@ function solve(s, unit) {
   return dp_Pa / 1000; // kPa
 }
 
-function formulaText(unit) {
+function formulaItems(unit) {
   if (unit === "imperial") {
-    return "ΔP = [ Q / (9.525 · π · K · d²) ]² · Sg     [psi, Q gpm, d in]";
+    return `
+      <div class="formula__item formula__item--span">
+        <div class="formula__label">Pressure drop (orifice equation)</div>
+        <div class="formula__expr">ΔP = [ Q ÷ (9.525 · π · K · d²) ]² · Sg</div>
+        <div class="formula__caption">Q gpm, d inches → ΔP psi</div>
+      </div>
+    `;
   }
-  return "ΔP = (ρ/2) · ( Q / (K · A) )²                  [Pa]\nρ = 1000 · Sg     A = π · d² / 4     ΔP shown in kPa";
+  return `
+    <div class="formula__item">
+      <div class="formula__label">Pressure drop</div>
+      <div class="formula__expr">ΔP = (ρ ÷ 2) · ( Q ÷ (K · A) )²</div>
+      <div class="formula__caption">SI base; ΔP shown in kPa</div>
+    </div>
+    <div class="formula__item">
+      <div class="formula__label">Density &amp; area</div>
+      <div class="formula__expr">ρ = 1000 · Sg &nbsp;·&nbsp; A = π · d² ÷ 4</div>
+      <div class="formula__caption">Q lpm → m³/s, d mm → m</div>
+    </div>
+  `;
 }
 
 function buildHero({ eyebrow, title, lede, art }) {

@@ -50,8 +50,4 @@ export const icons = {
     <path d="M12 11v5"/>
     <circle cx="12" cy="8" r=".8" fill="currentColor"/>
   `),
-  sparkle: stroke(`
-    <path d="M12 4l1.7 4.6L18 10l-4.3 1.4L12 16l-1.7-4.6L6 10l4.3-1.4L12 4z"/>
-    <path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15z"/>
-  `),
 };
