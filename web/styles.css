@@ -335,6 +335,30 @@ a { color: inherit; text-decoration: none; }
   margin-top: 2px;
   line-height: 1.3;
 }
+/* Fractional-inch reading (Imperial only) — shown in brackets directly beside
+   the entered decimal. The value cell becomes a flex row: the fraction sits to
+   the left, the number stays right-aligned against the column edge so every
+   row's figures still line up. */
+/* Fraction rows need a wider value column so the bracketed fraction and the
+   full decimal both fit. Only --value-w changes; the unit column is unchanged,
+   so the numbers still right-align with every other row. */
+.row--frac { --value-w: 184px; }
+.row__field {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.row__field .row__input { flex: 1 1 auto; width: auto; min-width: 4em; padding-left: 6px; }
+.row__frac {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--color-ink-2);
+  white-space: nowrap;
+}
+.row__frac:empty { display: none; }
 .row__input,
 .row__output {
   appearance: none;

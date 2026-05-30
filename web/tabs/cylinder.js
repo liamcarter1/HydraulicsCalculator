@@ -3,7 +3,7 @@
 
 import { illustrations } from "../illustrations.js";
 import { compute, units } from "../calc/cylinder.js";
-import { fmt } from "../format.js";
+import { fmt, inchFractionHint } from "../format.js";
 import { actionsBar, copyToClipboard, emailLink } from "../actions.js";
 import { icons } from "../icons.js";
 import { g, glossaryHTML } from "../glossary.js";
@@ -22,6 +22,10 @@ const inputDefs = [
   { key: "pressure", label: "Pressure" },
   { key: "flow",     label: "Oil Flow", hint: "Inlet flow rate driving the cylinder" },
 ];
+
+// Linear dimensions (inches) that get a nearest-1/64" fractional reading in
+// Imperial mode. Pressure and flow aren't expressed as fractions.
+const FRACTION_KEYS = ["bore", "rod", "stroke"];
 
 const resultRows = [
   { key: "area",     label: "Area" },
@@ -57,12 +61,9 @@ export function renderCylinder(host, { unit }) {
   inputDefs.forEach((def) => {
     const row = document.createElement("div");
     row.className = "row";
-    row.innerHTML = `
-      <label class="row__label" for="cyl-${def.key}">
-        ${def.label}
-        ${def.hint ? `<span class="row__hint">${def.hint}</span>` : ""}
-      </label>
-      <input
+    const showFrac = unit === "imperial" && FRACTION_KEYS.includes(def.key);
+    if (showFrac) row.classList.add("row--frac");
+    const input = `<input
         id="cyl-${def.key}"
         class="row__input"
         type="number"
@@ -71,7 +72,15 @@ export function renderCylinder(host, { unit }) {
         min="0"
         placeholder="0"
         value="${state[def.key] ?? ""}"
-      />
+      />`;
+    row.innerHTML = `
+      <label class="row__label" for="cyl-${def.key}">
+        ${def.label}
+        ${def.hint ? `<span class="row__hint">${def.hint}</span>` : ""}
+      </label>
+      ${showFrac
+        ? `<div class="row__field"><span class="row__frac" data-frac="${def.key}"></span>${input}</div>`
+        : input}
       <span class="row__unit">${u[def.key]}</span>
     `;
     inputsCard.body.appendChild(row);
@@ -212,6 +221,10 @@ export function renderCylinder(host, { unit }) {
   });
 
   function paint() {
+    // Refresh the fractional-inch readings (Imperial only) from the live input.
+    inputsCard.body.querySelectorAll(".row__frac").forEach((el) => {
+      el.textContent = inchFractionHint(state[el.dataset.frac]);
+    });
     const r = compute({ unit, ...state });
     resultsCard.body.querySelectorAll(".row__output[data-side]").forEach((cell) => {
       const side = cell.dataset.side;

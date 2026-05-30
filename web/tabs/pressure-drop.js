@@ -2,7 +2,7 @@
 // selector); given Q, d, K and Sg, solve for ΔP.
 
 import { illustrations } from "../illustrations.js";
-import { fmt } from "../format.js";
+import { fmt, inchFractionHint } from "../format.js";
 import { actionsBar, copyToClipboard, emailLink } from "../actions.js";
 import { g, glossaryHTML } from "../glossary.js";
 
@@ -52,9 +52,14 @@ export function renderPressureDrop(host, { unit }) {
     const def = FIELDS[unit][key];
     const row = document.createElement("div");
     row.className = "row";
+    const showFrac = unit === "imperial" && key === "diameter";
+    if (showFrac) row.classList.add("row--frac");
+    const input = `<input id="pd-${key}" class="row__input" type="number" inputmode="decimal" step="any" min="0" placeholder="0" value="${state[key] ?? ""}" />`;
     row.innerHTML = `
       <label class="row__label" for="pd-${key}">${def.label}</label>
-      <input id="pd-${key}" class="row__input" type="number" inputmode="decimal" step="any" min="0" placeholder="0" value="${state[key] ?? ""}" />
+      ${showFrac
+        ? `<div class="row__field"><span class="row__frac" data-frac="${key}"></span>${input}</div>`
+        : input}
       <span class="row__unit">${def.unit}</span>
     `;
     row.querySelector("input").addEventListener("input", (e) => {
@@ -111,6 +116,9 @@ export function renderPressureDrop(host, { unit }) {
   paint();
 
   function paint() {
+    inputsCard.body.querySelectorAll(".row__frac").forEach((el) => {
+      el.textContent = inchFractionHint(state[el.dataset.frac]);
+    });
     const dp = solve(state, unit);
     const def = FIELDS[unit].dp;
     const display = fmt(dp);
