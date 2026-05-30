@@ -638,6 +638,67 @@ a { color: inherit; text-decoration: none; }
   .formula__expr { font-size: 13.5px; }
 }
 
+/* Symbol glossary — sits under the formula grid, explains every symbol. */
+.glossary {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--color-line);
+}
+.glossary__title {
+  margin: 0 0 14px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-ink-3);
+}
+.glossary__grid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 56px;
+}
+.glossary__item {
+  display: grid;
+  grid-template-columns: minmax(34px, auto) 1fr;
+  gap: 12px;
+  align-items: baseline;
+  min-width: 0;
+}
+.glossary__sym {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-accent);
+  white-space: nowrap;
+}
+.glossary__def {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.glossary__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+.glossary__unit {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 11.5px;
+  color: var(--color-ink-3);
+}
+.glossary__desc {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--color-ink-2);
+}
+@media (max-width: 700px) {
+  .glossary__grid { grid-template-columns: 1fr; gap: 12px; }
+}
+
 /* Footer ------------------------------------------------ */
 .footer {
   margin-top: 48px;

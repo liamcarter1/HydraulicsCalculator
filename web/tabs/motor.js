@@ -11,6 +11,7 @@
 import { illustrations } from "../illustrations.js";
 import { fmt } from "../format.js";
 import { actionsBar, copyToClipboard, emailLink } from "../actions.js";
+import { g, glossaryHTML } from "../glossary.js";
 
 const STORAGE_KEY = "hsc.motor.inputs";
 
@@ -173,6 +174,17 @@ export function renderMotor(host, { unit }) {
       <details open>
         <summary>Formulas</summary>
         <div class="formula__grid">${formulaItems(state.mode, unit)}</div>
+        ${glossaryHTML([
+          g("Q", f.flow.unit),
+          g("Vdisp", f.displacement.unit),
+          g("N"),
+          g("P", f.pressure.unit),
+          g("Ttorque", f.torque.unit),
+          g("Pw", f.power.unit),
+          g("eta_v"),
+          g("eta_m"),
+          g("kconst"),
+        ])}
       </details>
     `;
     // Drive rotor animation. If speed is the OUTPUT, fall back to the input N (state.speed)

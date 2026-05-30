@@ -4,6 +4,7 @@
 import { illustrations } from "../illustrations.js";
 import { fmt } from "../format.js";
 import { actionsBar, copyToClipboard, emailLink } from "../actions.js";
+import { g, glossaryHTML } from "../glossary.js";
 
 const STORAGE_KEY = "hsc.pump.inputs";
 
@@ -156,6 +157,16 @@ export function renderPump(host, { unit }) {
       <details open>
         <summary>Formula</summary>
         <div class="formula__grid">${formulaItems(state.mode, unit)}</div>
+        ${glossaryHTML([
+          g("Q", f.flow.unit),
+          g("Vdisp", f.displacement.unit),
+          g("N"),
+          g("P", f.pressure.unit),
+          g("Pw", f.power.unit),
+          g("eta_v"),
+          g("eta_t"),
+          g("kconst"),
+        ])}
       </details>
     `;
     const rpm = +state.speed || 0;

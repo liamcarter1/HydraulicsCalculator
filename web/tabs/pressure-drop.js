@@ -4,6 +4,7 @@
 import { illustrations } from "../illustrations.js";
 import { fmt } from "../format.js";
 import { actionsBar, copyToClipboard, emailLink } from "../actions.js";
+import { g, glossaryHTML } from "../glossary.js";
 
 const STORAGE_KEY = "hsc.pressure-drop.inputs";
 
@@ -68,12 +69,26 @@ export function renderPressureDrop(host, { unit }) {
   const resultsCard = card("Results");
   grid.appendChild(resultsCard.el);
 
+  const f = FIELDS[unit];
+  // Imperial uses the single Trelleborg orifice equation; the metric track also
+  // shows the SI intermediates (density ρ, area A), so only list those then.
+  const glossaryEntries = [
+    g("dP", f.dp.unit),
+    g("Q", f.flow.unit),
+    g("d", f.diameter.unit),
+    g("K"),
+    g("Sg"),
+    ...(unit === "imperial" ? [] : [g("rho"), g("A")]),
+    g("pi"),
+  ];
+
   const formula = document.createElement("section");
   formula.className = "formula";
   formula.innerHTML = `
     <details open>
       <summary>Formula</summary>
       <div class="formula__grid">${formulaItems(unit)}</div>
+      ${glossaryHTML(glossaryEntries)}
     </details>
   `;
   host.appendChild(formula);

@@ -6,6 +6,7 @@ import { compute, units } from "../calc/cylinder.js";
 import { fmt } from "../format.js";
 import { actionsBar, copyToClipboard, emailLink } from "../actions.js";
 import { icons } from "../icons.js";
+import { g, glossaryHTML } from "../glossary.js";
 
 const STORAGE_KEY = "hsc.cylinder.inputs";
 
@@ -165,6 +166,21 @@ export function renderCylinder(host, { unit }) {
           <div class="formula__expr">Z = A<sub>bore</sub> ÷ A<sub>rod</sub></div>
         </div>
       </div>
+      ${glossaryHTML([
+        g("R", u.bore),
+        g("r", u.rod),
+        g("L", u.stroke),
+        g("P", u.pressure),
+        g("FR", u.flow),
+        g("A", u.area),
+        g("Vvol", u.volume),
+        g("F", u.force),
+        g("Ttime"),
+        g("vvel", u.velocity),
+        g("Out", u.outflow),
+        g("Z"),
+        g("pi"),
+      ])}
     </details>
   `;
   host.appendChild(formula);

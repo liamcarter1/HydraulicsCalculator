@@ -4,6 +4,7 @@
 import { illustrations } from "../illustrations.js";
 import { fmt } from "../format.js";
 import { actionsBar, copyToClipboard, emailLink } from "../actions.js";
+import { g, glossaryHTML } from "../glossary.js";
 
 const STORAGE_KEY = "hsc.piping.inputs";
 
@@ -81,12 +82,24 @@ export function renderPiping(host, { unit }) {
   grid.appendChild(inputsCard.el);
   grid.appendChild(resultsCard.el);
 
+  const fp = FIELDS[unit];
   const formula = document.createElement("section");
   formula.className = "formula";
   formula.innerHTML = `
     <details open>
       <summary>Formulas</summary>
       <div class="formula__grid">${formulaItems(unit)}</div>
+      ${glossaryHTML([
+        g("Q", fp.flow.unit),
+        g("d", fp.diameter.unit),
+        g("A", fp.area.unit),
+        g("vvel", fp.v.unit),
+        g("Re"),
+        g("Sg"),
+        g("mu"),
+        g("nu"),
+        g("pi"),
+      ])}
     </details>
   `;
   host.appendChild(formula);
