@@ -6,7 +6,7 @@ export function fmt(value, { decimals = 3, blank = "—" } = {}) {
   if (value === 0) return "0";
   const abs = Math.abs(value);
   if (abs >= 100000 || abs < 0.001) {
-    return value.toExponential(2).replace("e", "·10^");
+    return value.toExponential(2).replace(/e\+?/, "·10^");
   }
   // Adaptive decimals so big numbers don't print 5 decimals.
   const auto =

@@ -7,6 +7,7 @@ import { renderMotor } from "./motor.js";
 import { renderPump } from "./pump.js";
 import { renderPressureDrop } from "./pressure-drop.js";
 import { renderPiping } from "./piping.js";
+import { renderPropValve } from "./prop-valve.js";
 
 export const tabs = [
   {
@@ -44,5 +45,13 @@ export const tabs = [
     hint: "Velocity, Reynolds №",
     icon: icons.pipe,
     render: renderPiping,
+  },
+  {
+    id: "prop-valve",
+    label: "Proportional Valve",
+    labelShort: "Valve",
+    hint: "Valve sizing, dynamics",
+    icon: icons.valve,
+    render: renderPropValve,
   },
 ];

@@ -152,6 +152,47 @@ export const illustrations = {
     </g>
   `),
 
+  // Proportional directional valve — body on a manifold, solenoids each end,
+  // red spool lands visible through the window (spool slides with the calc).
+  propValve: wrap(`
+    <ellipse cx="110" cy="200" rx="85" ry="9" fill="${SHADOW}"/>
+    <g transform="translate(0,14)">
+      <!-- Manifold slab -->
+      <rect x="34" y="128" width="152" height="30" rx="6" fill="#1c1c1f" stroke="${INK}" stroke-width="1.2"/>
+      <!-- Work-port bosses under the manifold -->
+      <rect x="70" y="158" width="18" height="14" rx="3" fill="${INK}"/>
+      <rect x="132" y="158" width="18" height="14" rx="3" fill="${INK}"/>
+      <text x="79" y="184" font-family="ui-monospace, monospace" font-size="10" fill="${RED}" text-anchor="middle">A</text>
+      <text x="141" y="184" font-family="ui-monospace, monospace" font-size="10" fill="${RED}" text-anchor="middle">B</text>
+      <!-- Valve body -->
+      <rect x="42" y="64" width="136" height="64" rx="8" fill="#16161a" stroke="${INK}" stroke-width="1.2"/>
+      <!-- Solenoids (proportional, both ends) -->
+      <rect x="18" y="76" width="26" height="40" rx="5" fill="#0a0a0c" stroke="${INK}" stroke-width="1.2"/>
+      <rect x="176" y="76" width="26" height="40" rx="5" fill="#0a0a0c" stroke="${INK}" stroke-width="1.2"/>
+      <g stroke="${STEEL}" stroke-width="1" opacity="0.55">
+        <path d="M22 84h18M22 92h18M22 100h18M22 108h18"/>
+        <path d="M180 84h18M180 92h18M180 100h18M180 108h18"/>
+      </g>
+      <!-- Electrical connector (on-board electronics) -->
+      <rect x="102" y="46" width="16" height="20" rx="3" fill="${RED}"/>
+      <rect x="106" y="38" width="8" height="10" rx="2" fill="${INK}"/>
+      <!-- Spool window -->
+      <rect x="54" y="82" width="112" height="28" rx="6" fill="#0a0a0c" stroke="#26262b" stroke-width="1"/>
+      <!-- Spool: steel stem + red metering lands (slides with computed cycle) -->
+      <g class="pv-spool">
+        <rect x="58" y="91" width="104" height="10" rx="5" fill="#9a9aa1" stroke="${INK}" stroke-width="1"/>
+        <rect x="64" y="86" width="14" height="20" rx="3" fill="${RED}" stroke="${INK}" stroke-width="1"/>
+        <rect x="103" y="86" width="14" height="20" rx="3" fill="${RED}" stroke="${INK}" stroke-width="1"/>
+        <rect x="142" y="86" width="14" height="20" rx="3" fill="${RED}" stroke="${INK}" stroke-width="1"/>
+      </g>
+      <!-- Metering flow streams P→A and B→T (dashed, animated) -->
+      <line class="pv-flow" x1="79" y1="112" x2="79" y2="152" stroke="${RED}" stroke-width="2" stroke-linecap="round"/>
+      <path d="M73 146l6 8 6-8" fill="none" stroke="${RED}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <line class="pv-flow" x1="141" y1="152" x2="141" y2="112" stroke="${RED}" stroke-width="2" stroke-linecap="round"/>
+      <path d="M135 118l6-8 6 8" fill="none" stroke="${RED}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  `),
+
   // Pipe section, angled, with flow direction indicator.
   pipe: wrap(`
     <ellipse cx="110" cy="200" rx="80" ry="9" fill="${SHADOW}"/>
