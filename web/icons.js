@@ -31,6 +31,13 @@ export const icons = {
     <path d="M3 8h7a4 4 0 0 1 4 4v0a4 4 0 0 0 4 4h3"/>
     <path d="M3 16h7a4 4 0 0 0 4-4v0a4 4 0 0 1 4-4h3"/>
   `),
+  valve: stroke(`
+    <rect x="4.5" y="9" width="15" height="7.5" rx="1.2"/>
+    <path d="M9 15.2v-4.5M9 10.7l-1.6 1.8M9 10.7l1.6 1.8"/>
+    <path d="M15 10.7v4.5M15 15.2l-1.6-1.8M15 15.2l1.6-1.8"/>
+    <path d="M2 12.75h2.5M19.5 12.75h2.5"/>
+    <path d="M6 6.4l12-2.6"/>
+  `),
   copy: stroke(`
     <rect x="9" y="9" width="11" height="11" rx="2"/>
     <path d="M5 15V6a2 2 0 0 1 2-2h9"/>

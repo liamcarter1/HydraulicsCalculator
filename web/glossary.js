@@ -47,6 +47,22 @@ export const G = {
   Re:      { sym: "Re",  name: "Reynolds number",                 desc: "Flow-regime indicator: < 2300 laminar, > 4000 turbulent." },
   mu:      { sym: "μ",   name: "Absolute viscosity", unit: "cP",  desc: "Dynamic (absolute) viscosity of the fluid." },
   nu:      { sym: "ν",   name: "Kinematic viscosity", unit: "cSt", desc: "Kinematic viscosity (absolute viscosity ÷ density)." },
+
+  // Proportional valve -------------------------------------------------------
+  phi:     { sym: "φ",   name: "Area ratio",       unit: ": 1",   desc: "Bore-side area ÷ rod-side area (same quantity as Z on the Cylinder tab)." },
+  psys:    { sym: "p_s", name: "Supply pressure",                 desc: "Pressure delivered by the pump at the valve's P port." },
+  ptank:   { sym: "p_t", name: "Tank pressure",                   desc: "Back-pressure in the return line at the valve's T port." },
+  pLload:  { sym: "p_L", name: "Load pressure",                   desc: "Pressure needed to hold the load force alone (F ÷ A)." },
+  dpland:  { sym: "Δp",  name: "Valve pressure drop",             desc: "Drop across one metering land (P→A in, B→T out); the sum is the total valve drop." },
+  dpN:     { sym: "Δp_N", name: "Rated pressure drop",            desc: "Reference drop at which a valve's rated flow is quoted — per land, or total across both (halve it first)." },
+  QN:      { sym: "Q_N", name: "Rated flow",                      desc: "Flow a valve passes at its rated pressure drop; scales with √(Δp/Δp_N)." },
+  beta_e:  { sym: "β_e", name: "Effective bulk modulus",          desc: "Stiffness of the trapped oil column, reduced by hoses and entrained air." },
+  Vdead:   { sym: "V_d", name: "Dead volume",                     desc: "Oil trapped in lines and fittings between valve and cylinder — softens the oil spring." },
+  kh:      { sym: "k_h", name: "Hydraulic stiffness",             desc: "Spring rate of the trapped oil columns acting on the piston." },
+  fn:      { sym: "f_n", name: "Natural frequency",  unit: "Hz",  desc: "Resonance of the oil-spring + moved-mass system; lowest at mid-stroke. Valve bandwidth should exceed it, ideally 3×." },
+  mmass:   { sym: "m",   name: "Moved mass",                      desc: "Total mass the rod accelerates: load plus piston and rod." },
+  aacc:    { sym: "a",   name: "Acceleration",                    desc: "Rate of velocity change in the accel / decel phases (v ÷ ramp time)." },
+  gc:      { sym: "g_c", name: "Gravitational constant", unit: "386.4 in/s²", desc: "Converts lb mass to lbf·s²/in (imperial track only)." },
 };
 
 // Build a glossary entry from a dictionary key. Pass a unit string to override
