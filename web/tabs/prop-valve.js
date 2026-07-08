@@ -14,6 +14,7 @@ import { illustrations } from "../illustrations.js";
 import { fmt, inchFractionHint } from "../format.js";
 import { actionsBar, copyToClipboard, emailLink } from "../actions.js";
 import { g, glossaryHTML } from "../glossary.js";
+import { attachTips } from "../tooltip.js";
 
 const STORAGE_KEY = "hsc.prop-valve.inputs";
 
@@ -181,6 +182,7 @@ export function renderPropValve(host, { unit }) {
   });
   valveCard.el.appendChild(actEl);
 
+  attachTips(host); // pill/badge explanations (hover, focus, tap)
   paint();
 
   function buildInputs(body, keys) {
@@ -283,7 +285,7 @@ export function renderPropValve(host, { unit }) {
           <td>${fmt(p.pL)}</td>
           <td>${fmt(p.Qin)}</td>
           <td>${fmt(p.Qout)}</td>
-          <td>${p.stall ? `<span class="pill pill--bad">stall</span>` : fmt(p.dpIn)}</td>
+          <td>${p.stall ? `<span class="pill pill--bad" tabindex="0" data-tip="The load exceeds the force the supply can deliver in this phase — nothing is left to drop across the valve. Raise supply pressure or bore diameter.">stall</span>` : fmt(p.dpIn)}</td>
           <td>${p.stall ? "—" : fmt(p.dpOut)}</td>
           <td>${fmt(qn(p, dpServo))}</td>
           <td>${fmt(qn(p, dpProp))}</td>
@@ -340,16 +342,67 @@ export function renderPropValve(host, { unit }) {
     }
     const best = match.best;
     const M = unit === "metric";
+    const esc = (s) => s.replace(/"/g, "&quot;");
+    const pill = (cls, text, tip) =>
+      `<span class="pill pill--${cls}" tabindex="0" data-tip="${esc(tip)}">${text}</span>`;
+
+    const marginTip = (r) => {
+      const need = res.sizing.Qpeak;
+      const can = r.margin * need;
+      const flow = `pass ≈${fmt(can, { decimals: 1 })} ${U.flow} against the ${fmt(need, { decimals: 1 })} ${U.flow} this move needs`;
+      const envNote =
+        r.limitedBy === "envelope"
+          ? ` Capacity here is set by the published power-capacity envelope at your operating pressure drop, not by rated-flow scaling.`
+          : "";
+      if (r.marginClass === "short")
+        return `Undersized: this valve can only ${flow}.${envNote} Lower the max velocity, raise supply pressure, or step up a size.`;
+      if (r.marginClass === "marginal")
+        return `Thin margin: it can ${flow} — under the ×1.1 guideline. Verify against the manufacturer's sizing tool before committing.${envNote}`;
+      const oversize =
+        r.margin > 4
+          ? " Note: heavily oversized — small commands use only a sliver of spool travel, costing control resolution."
+          : "";
+      return `Good fit: it can ${flow}.${envNote}${oversize}`;
+    };
+    const bwTip = (r) => {
+      const hz = r.valve.bandwidth_hz;
+      const fnV = res.dynamics ? res.dynamics.fn : null;
+      if (hz == null)
+        return "No bandwidth figure is published for this series — confirm dynamics with Danfoss before using it in a closed-loop application.";
+      if (!(fnV > 0))
+        return "Enter moved mass, bore, rod and stroke to compute the load natural frequency for this check.";
+      const f = `${fmt(fnV, { decimals: 1 })} Hz`;
+      if (r.bwStatus === "ok")
+        return `${hz} Hz (−3 dB, graph-derived) is at least 3× the load natural frequency of ${f} — full closed-loop control authority.`;
+      if (r.bwStatus === "marginal")
+        return `${hz} Hz (graph-derived) exceeds the load natural frequency (${f}) but is under the ideal 3× (${fmt(3 * fnV, { decimals: 0 })} Hz). Fine for modest dynamics; verify for demanding closed-loop motion.`;
+      return `${hz} Hz (graph-derived) is below the load natural frequency (${f}) — the valve cannot control the load's resonance; expect sluggish or unstable closed-loop response.`;
+    };
+    const pbTip = (r, pMax) => {
+      const side = res.direction === "extend" ? "rod" : "cap";
+      return `Meter-out braking can intensify the ${side}-end pressure to ≈${fmt(res.decel.pbMax, { decimals: 0 })} ${U.pressure}, above this valve's ${fmt(pMax, { decimals: 0 })} ${U.pressure} work-port rating. Slow the deceleration or choose a higher-rated valve.`;
+    };
+    const badgeTip = (v) =>
+      v.status === "verified"
+        ? `Confirmed against the datasheet by ${v.verified_by ?? "engineering"}. Click to open the source document.`
+        : v.status === "extracted"
+          ? `${v.source}. Pending engineering sign-off — click to open the source document.`
+          : "Seed value, not yet checked against a datasheet.";
 
     const marginPill = (r) =>
       r.margin == null
         ? "—"
-        : `<span class="pill pill--${r.marginClass === "ok" ? "ok" : r.marginClass === "marginal" ? "warn" : "bad"}">×${fmt(r.margin, { decimals: 2 })}${r.marginClass === "short" ? " short" : ""}</span>`;
+        : pill(
+            r.marginClass === "ok" ? "ok" : r.marginClass === "marginal" ? "warn" : "bad",
+            `×${fmt(r.margin, { decimals: 2 })}${r.marginClass === "short" ? " short" : ""}`,
+            marginTip(r)
+          );
     const bwPill = (r) => {
       const hz = r.valve.bandwidth_hz;
-      if (r.bwStatus === "unknown") return hz == null ? `<span class="pill pill--muted">n/a</span>` : `${hz} Hz`;
+      if (r.bwStatus === "unknown")
+        return pill("muted", hz == null ? "n/a" : `${hz} Hz`, bwTip(r));
       const cls = r.bwStatus === "ok" ? "ok" : r.bwStatus === "marginal" ? "warn" : "bad";
-      return `<span class="pill pill--${cls}">${hz} Hz ${r.bwStatus}</span>`;
+      return pill(cls, `${hz} Hz ${r.bwStatus}`, bwTip(r));
     };
 
     const rows = match.rows
@@ -364,12 +417,7 @@ export function renderPropValve(host, { unit }) {
         const exclReason = !r.psOk
           ? " · excluded: p_max below supply"
           : !r.ptOk ? " · excluded: T-port limit below tank pressure" : "";
-        const statusBadge =
-          v.status === "verified"
-            ? `<span class="badge-verified" title="Confirmed by ${v.verified_by ?? "engineering"}">verified</span>`
-            : v.status === "extracted"
-              ? `<span class="badge-unverified" title="${v.source}">extracted</span>`
-              : `<span class="badge-unverified">unverified</span>`;
+        const statusBadge = `<span class="${v.status === "verified" ? "badge-verified" : "badge-unverified"}" tabindex="0" data-tip="${esc(badgeTip(v))}">${v.status === "verified" ? "verified" : v.status === "extracted" ? "extracted" : "unverified"}</span>`;
         return `
         <tr class="${cls}">
           <td>
@@ -380,7 +428,7 @@ export function renderPropValve(host, { unit }) {
           <td>${fmt(r.qReq)}</td>
           <td>${marginPill(r)}${r.limitedBy === "envelope" ? `<span class="cell-sub">envelope-limited</span>` : ""}</td>
           <td>${bwPill(r)}</td>
-          <td>${fmt(pMax, { decimals: 0 })}${!r.pbOk ? ` <span class="pill pill--warn">&lt; decel p_b</span>` : ""}</td>
+          <td>${fmt(pMax, { decimals: 0 })}${!r.pbOk ? ` ${pill("warn", "&lt; decel p_b", pbTip(r, pMax))}` : ""}</td>
           <td><a href="${v.datasheet_url}" target="_blank" rel="noopener">${statusBadge}</a></td>
         </tr>`;
       })
