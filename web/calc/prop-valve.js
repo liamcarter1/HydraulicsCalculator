@@ -242,12 +242,20 @@ export function requiredRatedFlow(sizing, dpNland) {
 // Match the computed requirement against the valve catalogue.
 // Returns rows (ranked), the best pick, the closest miss when nothing fits,
 // and match-level warnings — all in the caller's unit system.
+//
+// Two capacity constraints per valve, and the binding one wins:
+//  1. Rated-flow law: allowable flow at the operating Δp per the √ scaling,
+//     q_rated·√(Δp_in/Δp_N,land). Valid near the rating point.
+//  2. Power-capacity envelope: the datasheet's flow-force limit. Low-Δp-rated
+//     valves (5 bar/land) would be credited with impossible flows at high
+//     drops by the √ law alone — the envelope caps them.
 export function matchValves(result, catalogue, unit) {
   const M = unit !== "imperial";
   const empty = { rows: [], best: null, closest: null, warnings: [] };
   if (!result || !result.sizing) return empty;
 
   const ps = result.supply.ps;
+  const pt = result.supply.pt;
   const fn = result.dynamics ? result.dynamics.fn : null;
   const pbMax = result.decel ? result.decel.pbMax : null;
 
@@ -255,13 +263,35 @@ export function matchValves(result, catalogue, unit) {
     const qRated = M ? v.q_rated_lpm : v.q_rated_gpm;
     const dpRef = M ? v.dp_ref_bar : v.dp_ref_psi;
     const pMax = M ? v.p_max_bar : v.p_max_psi;
+    const pMaxT = M ? v.p_max_t_bar : v.p_max_t_psi;
+    const env = M ? v.envelope : v.envelope_imperial;
+    const qMaxCeil = M ? v.q_max_lpm : v.q_max_gpm;
     const dpNland = v.dp_basis === "total" ? dpRef / 2 : dpRef;
     const qReq = requiredRatedFlow(result.sizing, dpNland);
-    const margin = qReq > 0 ? qRated / qReq : null;
+    const marginRated = qReq > 0 ? qRated / qReq : null;
+
+    // Envelope cap at the operating point.
+    let qCap = null;
+    if (env && env.points && env.points.length) {
+      const dpOp = env.basis === "single_path" ? result.sizing.dpIn : result.sizing.dpTotal;
+      qCap = interpEnvelope(env.points, dpOp);
+    } else if (qMaxCeil != null) {
+      qCap = qMaxCeil;
+    }
+    const marginEnv = qCap != null && result.sizing.Qpeak > 0 ? qCap / result.sizing.Qpeak : null;
+
+    let margin = marginRated;
+    let limitedBy = "rated";
+    if (marginEnv != null && (margin == null || marginEnv < margin)) {
+      margin = marginEnv;
+      limitedBy = "envelope";
+    }
+
     return {
       valve: v,
-      qRated, dpNland, qReq, margin,
+      qRated, dpNland, qReq, margin, limitedBy,
       psOk: pMax >= ps,
+      ptOk: pMaxT == null || pt <= pMaxT,
       pbOk: pbMax == null || pMax >= pbMax,
       marginClass:
         margin == null ? "unknown" : margin >= 1.1 ? "ok" : margin >= 1 ? "marginal" : "short",
@@ -272,19 +302,30 @@ export function matchValves(result, catalogue, unit) {
     };
   });
 
-  // Rank: smallest adequate valve first, then marginal, then short, then
-  // pressure-excluded (still listed so the customer sees the whole range).
-  const bucket = (r) =>
-    !r.psOk ? 3 : r.marginClass === "ok" ? 0 : r.marginClass === "marginal" ? 1 : 2;
+  // Rank feasible valves by overall suitability, not flow margin alone:
+  // a valve whose bandwidth sits below the load's natural frequency, or whose
+  // rating the deceleration back-pressure exceeds, is a worse pick than a
+  // dynamically sound one — and a heavily oversized valve loses control
+  // resolution. Lower score = better; ties broken by smallest margin.
+  const suitability = (r) =>
+    (r.bwStatus === "ok" ? 0 : r.bwStatus === "low" ? 6 : 2) + // dynamics first
+    (r.pbOk ? 0 : 2) +                                          // decel back-pressure rating
+    (r.margin < 1.1 ? 2 : 0) +                                  // thin flow margin
+    (r.margin > 4 ? 2 : r.margin > 2.5 ? 1 : 0);                // oversizing → poor resolution
+  const feasible = (r) => r.psOk && r.ptOk && r.margin != null && r.margin >= 1;
+  const bucket = (r) => (!r.psOk || !r.ptOk ? 2 : feasible(r) ? 0 : 1);
   const sorted = [...rows].sort((a, b) => {
     const d = bucket(a) - bucket(b);
     if (d) return d;
-    // Adequate: ascending margin (tightest fit wins). Others: descending (closest first).
-    return bucket(a) === 0 ? a.margin - b.margin : b.margin - a.margin;
+    if (bucket(a) === 0) {
+      const s = suitability(a) - suitability(b);
+      return s !== 0 ? s : a.margin - b.margin;
+    }
+    return (b.margin ?? -1) - (a.margin ?? -1); // infeasible: closest first
   });
 
-  const best = sorted.find((r) => r.psOk && r.margin != null && r.margin >= 1) || null;
-  const closest = best ? null : sorted.find((r) => r.psOk && r.margin != null) || null;
+  const best = sorted.find(feasible) || null;
+  const closest = best ? null : sorted.find((r) => r.psOk && r.ptOk && r.margin != null) || null;
 
   const warnings = [];
   const fUnit = M ? "lpm" : "gpm";
@@ -361,6 +402,20 @@ export const WARNINGS = {
 function renderWarning(code, unit, params = {}) {
   const def = WARNINGS[code];
   return { code, level: def.level, text: def.text(unit, params) };
+}
+
+// Piecewise-linear interpolation on a power-capacity envelope, clamped at
+// both ends. Envelopes can fold back (flow-force limit), so this is a plain
+// walk over Δp-sorted segments, not a monotonic lookup.
+function interpEnvelope(points, dp) {
+  if (!(dp > 0) || !points.length) return null;
+  if (dp <= points[0][0]) return points[0][1];
+  for (let i = 1; i < points.length; i++) {
+    const [d0, q0] = points[i - 1];
+    const [d1, q1] = points[i];
+    if (dp <= d1) return q0 + ((q1 - q0) * (dp - d0)) / (d1 - d0);
+  }
+  return points[points.length - 1][1];
 }
 
 // Output unit labels per system (inputs live in the tab's FIELDS map).
