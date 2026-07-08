@@ -355,23 +355,33 @@ export function renderPropValve(host, { unit }) {
     const rows = match.rows
       .map((r) => {
         const v = r.valve;
+        const excluded = !r.psOk || !r.ptOk;
         const cls = [
-          !r.psOk ? "is-excluded" : "",
+          excluded ? "is-excluded" : "",
           best && v.id === best.valve.id ? "is-best" : "",
         ].join(" ");
         const pMax = M ? v.p_max_bar : v.p_max_psi;
+        const exclReason = !r.psOk
+          ? " · excluded: p_max below supply"
+          : !r.ptOk ? " · excluded: T-port limit below tank pressure" : "";
+        const statusBadge =
+          v.status === "verified"
+            ? `<span class="badge-verified" title="Confirmed by ${v.verified_by ?? "engineering"}">verified</span>`
+            : v.status === "extracted"
+              ? `<span class="badge-unverified" title="${v.source}">extracted</span>`
+              : `<span class="badge-unverified">unverified</span>`;
         return `
         <tr class="${cls}">
           <td>
             <span class="cell-label">${v.series} · ${v.code}</span>
-            <span class="cell-sub">${v.size} · ${v.performance_class}${v.feedback && v.performance_class !== "feedback" ? " · feedback" : ""}${!r.psOk ? " · excluded: p_max below supply" : ""}</span>
+            <span class="cell-sub">${v.size} · ${v.performance_class}${v.pilot ? " · " + v.pilot : ""}${exclReason}</span>
           </td>
           <td>${fmt(r.qRated, { decimals: 1 })} <span class="cell-sub">@ ${fmt(r.dpNland, { decimals: 0 })} ${U.pressure}/land${v.dp_basis === "total" ? ` (${M ? v.dp_ref_bar : v.dp_ref_psi} total)` : ""}</span></td>
           <td>${fmt(r.qReq)}</td>
-          <td>${marginPill(r)}</td>
+          <td>${marginPill(r)}${r.limitedBy === "envelope" ? `<span class="cell-sub">envelope-limited</span>` : ""}</td>
           <td>${bwPill(r)}</td>
           <td>${fmt(pMax, { decimals: 0 })}${!r.pbOk ? ` <span class="pill pill--warn">&lt; decel p_b</span>` : ""}</td>
-          <td><a href="${v.datasheet_url}" target="_blank" rel="noopener"><span class="badge-unverified">${v.verified ? "verified" : "unverified"}</span></a></td>
+          <td><a href="${v.datasheet_url}" target="_blank" rel="noopener">${statusBadge}</a></td>
         </tr>`;
       })
       .join("");
@@ -415,7 +425,7 @@ export function renderPropValve(host, { unit }) {
         </table>
       </div>
       <div class="notice" style="background:var(--color-surface-2);border-color:var(--color-line);color:var(--color-ink-2);">
-        Bandwidth rule applied: the valve's −3 dB bandwidth should exceed the load natural frequency f_n${res.dynamics ? ` (${fmt(res.dynamics.fn, { decimals: 1 })} Hz here)` : ""}, ideally by 3×. Rated flows scale with √(Δp/Δp_N); "total"-basis ratings are halved to a per-land figure before comparison.
+        Bandwidth rule applied: the valve's −3 dB bandwidth should exceed the load natural frequency f_n${res.dynamics ? ` (${fmt(res.dynamics.fn, { decimals: 1 })} Hz here)` : ""}, ideally by 3×. Rated flows scale with √(Δp/Δp_N) ("total"-basis ratings halved to per-land first) and are capped by each valve's published power-capacity envelope at the operating pressure drop — "envelope-limited" marks where that cap binds.
       </div>
       <div class="notice">⚠ ${CATALOGUE_DISCLAIMER}</div>
     `;
@@ -560,9 +570,9 @@ function serialize(state, unit) {
   out.push(...(allWarnings.length ? allWarnings.map((w) => `  [${w.level}] ${w.text}`) : ["  All checks passed."]));
 
   if (match.rows.length && res.sizing) {
-    out.push("", "Top catalogue matches (UNVERIFIED seed data — confirm with engineering)");
+    out.push("", "Top catalogue matches (extracted from Danfoss datasheets, pending engineering sign-off)");
     match.rows.slice(0, 3).forEach((r) => {
-      out.push(line(`${r.valve.series} ${r.valve.code}`, `margin ×${fmt(r.margin, { decimals: 2 })} · rated ${fmt(r.qRated)} ${U.flow} @ ${fmt(r.dpNland)} ${U.pressure}/land · bw ${r.valve.bandwidth_hz ?? "n/a"} Hz`));
+      out.push(line(`${r.valve.series} ${r.valve.code}`, `margin ×${fmt(r.margin, { decimals: 2 })}${r.limitedBy === "envelope" ? " (envelope-limited)" : ""} · rated ${fmt(r.qRated)} ${U.flow} @ ${fmt(r.dpNland)} ${U.pressure}/land · bw ${r.valve.bandwidth_hz ?? "n/a"} Hz`));
     });
   }
   return out.join("\n");
