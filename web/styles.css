@@ -542,6 +542,29 @@ a { color: inherit; text-decoration: none; }
 .data-table tr.is-excluded td { opacity: 0.45; }
 .data-table tr.is-best .cell-label { color: var(--color-accent); }
 
+/* Tooltip (pill/badge explanations) ----------------------- */
+[data-tip] { cursor: help; }
+.tooltip {
+  position: fixed;
+  z-index: 1000;
+  max-width: 300px;
+  padding: 10px 13px;
+  border-radius: var(--radius-sm);
+  background: var(--color-ink);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0;
+  text-transform: none;
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+.tooltip.is-visible { opacity: 1; }
+
 /* Unverified-data badge + banner (catalogue card) --------- */
 .badge-unverified,
 .badge-verified {
